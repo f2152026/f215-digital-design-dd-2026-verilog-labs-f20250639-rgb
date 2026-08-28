@@ -15,48 +15,82 @@ module cla64_flat(
   wire [63:0] p, g;
   wire [64:1] c;   // c[1]..c[64] are the 64 carries; think of cin as c[0]
 
+  // ---------------------------------------------------------------------
+  // Step 1: generate/propagate signals -- WORKED EXAMPLE
+  //
+  // This part is genuinely uniform across all 64 bits (same operation at
+  // every position), so a generate-for loop is the right tool here.
+  // `genvar` is a compile-time-only loop variable -- it does not exist as
+  // a real signal in the final circuit, it just controls how many times
+  // the loop body is elaborated.
+  // ---------------------------------------------------------------------
   genvar i;
-    generate
-        for (i = 0; i < 64; i = i + 1) begin : gen_pg
-            xor #(2) (p[i], a[i], b[i]);
-            and #(2) (g[i], a[i], b[i]);
-        end
-    endgenerate
+  generate
+    for (i = 0; i < 64; i = i + 1) begin : gen_pg
+      xor #(2) (p[i], a[i], b[i]);
+      and #(2) (g[i], a[i], b[i]);
+    end
+  endgenerate
 
-    // Direct carry-lookahead equations
-
-    assign #(2) c[1] =
-        g[0] |
+  // ---------------------------------------------------------------------
+  // Step 2: the 64 direct carry equations -- YOUR TASK
+  //
+  // Unlike P and G, these are NOT uniform: Ck needs k+1 product terms,
+  // each one literal longer than the last (see Tutorial 3's derivation).
+  // Writing all 64 of these by hand is extremely tedious and error-prone,
+  // and a single generate-for loop cannot produce them directly (both the
+  // number of terms AND the length of each term change with k).
+  //
+  // Instead: use an AI coding assistant to generate these 64 `assign`
+  // statements.
+  //   - Give it your own C1..C4 equations from cla4.v as the exact
+  //     pattern to continue.
+  //   - Ask it to produce assign statements (with #(2) delays, matching
+  //     the rest of this file) for c[1] through c[64] following that
+  //     same pattern.
+  //
+  // YOU are responsible for verifying the result before trusting it --
+  // this is not optional:
+  //   (1) Confirm the generated c[1]..c[4] exactly match your own cla4.v
+  //       equations.
+  //   (2) Pick at least one later equation (e.g. c[10] or c[32]), re-derive
+  //       it yourself by hand from the recursive definition, and confirm
+  //       it matches what was generated.
+  // Do not move on to this task's reflection question until you've done
+  // both checks.
+  //
+  // c1
+    assign #(2) c[1] = g[0] |
         (p[0] & cin);
 
-    assign #(2) c[2] =
-        g[1] |
+    // c2
+    assign #(2) c[2] = g[1] |
         (p[1] & g[0]) |
         (p[1] & p[0] & cin);
 
-    assign #(2) c[3] =
-        g[2] |
+    // c3
+    assign #(2) c[3] = g[2] |
         (p[2] & g[1]) |
         (p[2] & p[1] & g[0]) |
         (p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[4] =
-        g[3] |
+    // c4
+    assign #(2) c[4] = g[3] |
         (p[3] & g[2]) |
         (p[3] & p[2] & g[1]) |
         (p[3] & p[2] & p[1] & g[0]) |
         (p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[5] =
-        g[4] |
+    // c5
+    assign #(2) c[5] = g[4] |
         (p[4] & g[3]) |
         (p[4] & p[3] & g[2]) |
         (p[4] & p[3] & p[2] & g[1]) |
         (p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[6] =
-        g[5] |
+    // c6
+    assign #(2) c[6] = g[5] |
         (p[5] & g[4]) |
         (p[5] & p[4] & g[3]) |
         (p[5] & p[4] & p[3] & g[2]) |
@@ -64,8 +98,8 @@ module cla64_flat(
         (p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[7] =
-        g[6] |
+    // c7
+    assign #(2) c[7] = g[6] |
         (p[6] & g[5]) |
         (p[6] & p[5] & g[4]) |
         (p[6] & p[5] & p[4] & g[3]) |
@@ -74,8 +108,8 @@ module cla64_flat(
         (p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[8] =
-        g[7] |
+    // c8
+    assign #(2) c[8] = g[7] |
         (p[7] & g[6]) |
         (p[7] & p[6] & g[5]) |
         (p[7] & p[6] & p[5] & g[4]) |
@@ -85,8 +119,8 @@ module cla64_flat(
         (p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[9] =
-        g[8] |
+    // c9
+    assign #(2) c[9] = g[8] |
         (p[8] & g[7]) |
         (p[8] & p[7] & g[6]) |
         (p[8] & p[7] & p[6] & g[5]) |
@@ -97,8 +131,8 @@ module cla64_flat(
         (p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[10] =
-        g[9] |
+    // c10
+    assign #(2) c[10] = g[9] |
         (p[9] & g[8]) |
         (p[9] & p[8] & g[7]) |
         (p[9] & p[8] & p[7] & g[6]) |
@@ -110,8 +144,8 @@ module cla64_flat(
         (p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[11] =
-        g[10] |
+    // c11
+    assign #(2) c[11] = g[10] |
         (p[10] & g[9]) |
         (p[10] & p[9] & g[8]) |
         (p[10] & p[9] & p[8] & g[7]) |
@@ -124,8 +158,8 @@ module cla64_flat(
         (p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[12] =
-        g[11] |
+    // c12
+    assign #(2) c[12] = g[11] |
         (p[11] & g[10]) |
         (p[11] & p[10] & g[9]) |
         (p[11] & p[10] & p[9] & g[8]) |
@@ -139,8 +173,8 @@ module cla64_flat(
         (p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[13] =
-        g[12] |
+    // c13
+    assign #(2) c[13] = g[12] |
         (p[12] & g[11]) |
         (p[12] & p[11] & g[10]) |
         (p[12] & p[11] & p[10] & g[9]) |
@@ -155,8 +189,8 @@ module cla64_flat(
         (p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[14] =
-        g[13] |
+    // c14
+    assign #(2) c[14] = g[13] |
         (p[13] & g[12]) |
         (p[13] & p[12] & g[11]) |
         (p[13] & p[12] & p[11] & g[10]) |
@@ -172,8 +206,8 @@ module cla64_flat(
         (p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[15] =
-        g[14] |
+    // c15
+    assign #(2) c[15] = g[14] |
         (p[14] & g[13]) |
         (p[14] & p[13] & g[12]) |
         (p[14] & p[13] & p[12] & g[11]) |
@@ -190,8 +224,8 @@ module cla64_flat(
         (p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[16] =
-        g[15] |
+    // c16
+    assign #(2) c[16] = g[15] |
         (p[15] & g[14]) |
         (p[15] & p[14] & g[13]) |
         (p[15] & p[14] & p[13] & g[12]) |
@@ -209,8 +243,8 @@ module cla64_flat(
         (p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[17] =
-        g[16] |
+    // c17
+    assign #(2) c[17] = g[16] |
         (p[16] & g[15]) |
         (p[16] & p[15] & g[14]) |
         (p[16] & p[15] & p[14] & g[13]) |
@@ -229,8 +263,8 @@ module cla64_flat(
         (p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[18] =
-        g[17] |
+    // c18
+    assign #(2) c[18] = g[17] |
         (p[17] & g[16]) |
         (p[17] & p[16] & g[15]) |
         (p[17] & p[16] & p[15] & g[14]) |
@@ -250,8 +284,8 @@ module cla64_flat(
         (p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[19] =
-        g[18] |
+    // c19
+    assign #(2) c[19] = g[18] |
         (p[18] & g[17]) |
         (p[18] & p[17] & g[16]) |
         (p[18] & p[17] & p[16] & g[15]) |
@@ -272,8 +306,8 @@ module cla64_flat(
         (p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    assign #(2) c[20] =
-        g[19] |
+    // c20
+    assign #(2) c[20] = g[19] |
         (p[19] & g[18]) |
         (p[19] & p[18] & g[17]) |
         (p[19] & p[18] & p[17] & g[16]) |
@@ -295,6 +329,7 @@ module cla64_flat(
         (p[19] & p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[19] & p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
+    // c21
     assign #(2) c[21] = g[20] |
         (p[20] & g[19]) |
         (p[20] & p[19] & g[18]) |
@@ -2296,12 +2331,14 @@ module cla64_flat(
         (p[63] & p[62] & p[61] & p[60] & p[59] & p[58] & p[57] & p[56] & p[55] & p[54] & p[53] & p[52] & p[51] & p[50] & p[49] & p[48] & p[47] & p[46] & p[45] & p[44] & p[43] & p[42] & p[41] & p[40] & p[39] & p[38] & p[37] & p[36] & p[35] & p[34] & p[33] & p[32] & p[31] & p[30] & p[29] & p[28] & p[27] & p[26] & p[25] & p[24] & p[23] & p[22] & p[21] & p[20] & p[19] & p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & g[0]) |
         (p[63] & p[62] & p[61] & p[60] & p[59] & p[58] & p[57] & p[56] & p[55] & p[54] & p[53] & p[52] & p[51] & p[50] & p[49] & p[48] & p[47] & p[46] & p[45] & p[44] & p[43] & p[42] & p[41] & p[40] & p[39] & p[38] & p[37] & p[36] & p[35] & p[34] & p[33] & p[32] & p[31] & p[30] & p[29] & p[28] & p[27] & p[26] & p[25] & p[24] & p[23] & p[22] & p[21] & p[20] & p[19] & p[18] & p[17] & p[16] & p[15] & p[14] & p[13] & p[12] & p[11] & p[10] & p[9] & p[8] & p[7] & p[6] & p[5] & p[4] & p[3] & p[2] & p[1] & p[0] & cin);
 
-    // --------------------------------------------------
-    // Step 3: Sum bits
-    // sum[i] = p[i] ^ c[i], with c[0] = cin
-    // --------------------------------------------------
 
-    assign #(2) sum[0] = p[0] ^ cin;
+
+  assign cout = c[64];
+
+  // ---------------------------------------------------------------------
+  // Step 3: sum bits
+  // ---------------------------------------------------------------------
+  assign #(2) sum[0] = p[0] ^ cin;
 
     genvar s;
     generate
@@ -2313,4 +2350,3 @@ module cla64_flat(
     assign #(2) cout = c[64];
 
 endmodule
-
